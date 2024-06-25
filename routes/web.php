@@ -22,4 +22,5 @@ Route::get('/watermark-image',[TestController::class,'watermarkImage']);
 // Route::post('/add_watermark',[TestController::class,'addWatermark']);
 // Route::post('/add_watermark',[TestController::class,'addTextwatermark']);
 // Route::post('/add_watermark',[TestController::class,'addRepeatedWatermark']);
-Route::post('/add_watermark',[TestController::class,'addOverlayImage']);
+// Route::post('/add_watermark',[TestController::class,'addOverlayImage']);
+Route::post('/add_watermark',[TestController::class,'addStaticImage']);

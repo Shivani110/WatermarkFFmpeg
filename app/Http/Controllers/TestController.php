@@ -11,6 +11,7 @@ class TestController extends Controller
         return view('image_upload');
     }
 
+    // ADD IMAGE WATERMARK ON IMAGE
     public function addWatermark(Request $request){
         $image = $request->file('image');
         $watermark = $request->file('watermark');
@@ -40,6 +41,7 @@ class TestController extends Controller
         return response()->json(['message' => 'Watermark added successfully', 'path' => Storage::url('images/' . $outputName)], 200);
     }
 
+    // ADD TEXT WATERMARK ON IMAGE
     public function addTextwatermark(Request $request){
         $image = $request->file('image');
         $watermarktext = $request->watermark;
@@ -62,7 +64,7 @@ class TestController extends Controller
     }
 
     public function addRepeatedWatermark(Request $request){
-        // dd($request->all());
+        dd($request->all());
 
         $image = $request->file('image');
         $watermark = $request->file('watermark');
@@ -120,43 +122,91 @@ class TestController extends Controller
 
     public function addOverlayImage(Request $request){
         // dd($request->all());
-        $request->validate([
-            'image' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'overlay' => 'required|image|mimes:png',
-            'x_position' => 'required|integer',
-            'y_position' => 'required|integer'
-        ]);
+        // $request->validate([
+        //     'image' => 'required|image|mimes:png',
+        //     // 'overlay' => 'required|image|mimes:png',
+        //     'x_position' => 'required|integer',
+        //     'y_position' => 'required|integer'
+        // ]);
 
         // Get the uploaded image and overlay parameters
         $image = $request->file('image');
-        $overlay = $request->file('overlay');
+      
+        // $overlay = $request->file('overlay');
         $xPosition = $request->input('x_position');
-        $yPosition = $request->input('y_position');
 
+        $yPosition = $request->input('y_position');
+       
         // Generate unique file names
         $imageName = time(). '.' . $image->getClientOriginalExtension();
-        $overlayName = time(). '.' . $overlay->getClientOriginalExtension();
+       
+        // $overlayName = time(). '.' . $overlay->getClientOriginalExtension();
         $outputName = 'overlayed_' . $imageName;
-
+        
         // Save the uploaded files to storage
         $imagePath = $image->storeAs('images', $imageName);
-        $overlayPath = $overlay->storeAs('overlays', $overlayName);
-
+        // $overlayPath = $overlay->storeAs('overlays', $overlayName);
+       
         // Define paths
         $inputImagePath = storage_path('app/' . $imagePath);
-        $inputOverlayPath = storage_path('app/' . $overlayPath);
+        
+        // $inputOverlayPath = storage_path('app/' . $overlayPath);
+        $inputOverlayPath = storage_path('app/overlays/1718949756.png');
+   
         $outputImagePath = storage_path('app/images/' . $outputName);
-
+        // dd($outputImagePath);
         // Build the FFmpeg command
         // $ffmpegCmd = "ffmpeg -i $inputImagePath -i $inputOverlayPath -filter_complex \"[0][1] overlay=$xPosition:$yPosition\" -y $outputImagePath";
  
-        // this is for reduce opacity min 0 and max 1 //
-        // $ffmpegCmd = "ffmpeg -i $inputImagePath -i $inputOverlayPath -filter_complex \"[1]format=rgba,colorchannelmixer=aa=0.3[wm];[0][wm]overlay=$xPosition:$yPosition\" -y $outputImagePath";
-       
-        
-        // Execute the FFmpeg command
-        shell_exec($ffmpegCmd);
+        // FOR REDUCE OPACITY BETWEEN 0 to 1 //
+        $ffmpegCmd = "ffmpeg -i $inputImagePath -i $inputOverlayPath -filter_complex \"[1]format=rgba,colorchannelmixer=aa=0.4[wm];[0][wm]overlay=$xPosition:$yPosition\" -y $outputImagePath";
 
-        return response()->json(['message' => 'Image overlay added successfully', 'path' => Storage::url('images/' . $outputName)], 200);
+        // Execute the FFmpeg command and capture output
+       
+        exec($ffmpegCmd . " 2>&1", $output, $return_var);
+
+        // Check if the command was executed successfully
+        if ($return_var === 0) {
+            return response()->json([
+                'message' => 'Image overlay added successfully',
+                'path' => Storage::url('images/' . $outputName),
+                'ffmpeg_output' => $output
+            ], 200);
+        } else {
+            return response()->json([
+                'message' => 'Failed to overlay image',
+                'error' => $output
+            ], 500);
+        }
+       
+    }
+
+    public function addStaticImage(Request $request){
+        $xPosition = $request->input('x_position');
+        $yPosition = $request->input('y_position');
+
+        $inputImagePath = storage_path('app/images/1718883839.png');
+        $inputOverlayPath = storage_path('app/overlays/1718978261.png');
+
+        $outputName = 'overlayed_1718883839.png';
+        $outputImagePath = storage_path('app/images/' . $outputName);
+
+        $ffmpegCmd = "ffmpeg -i $inputImagePath -i $inputOverlayPath -filter_complex \"[1]format=rgba,colorchannelmixer=aa=0.4[wm];[0][wm]overlay=$xPosition:$yPosition\" -y $outputImagePath";
+
+        exec($ffmpegCmd . " 2>&1", $output, $return_var);
+
+        if ($return_var === 0) {
+            return response()->json([
+                'message' => 'Image overlay added successfully',
+                'path' => Storage::url('images/' . $outputName),
+                'ffmpeg_output' => $output
+            ], 200);
+        } else {
+            return response()->json([
+                'message' => 'Failed to overlay image',
+                'error' => $output
+            ], 500);
+        }
+
     }
 }
